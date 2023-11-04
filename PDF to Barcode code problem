@@ -1,0 +1,93 @@
+import tkinter as tk
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+import io
+import barcode
+import re
+import barcode.writer
+from barcode.writer import ImageWriter
+from tkinter import filedialog as fd
+from tkinter.messagebox import showinfo
+from tkinter import filedialog
+from tkinter import *
+
+
+win = tk.Tk()
+win.title('PDF Barcodes to PNG WB')
+win.geometry("700x200+500+400")
+win.config(bg='#d3b4ff')
+
+label_1 = tk.Label(win, text='Загрузите ваш PDF файл',
+                   bg='#d3b4ff', font=('Calibri', 20))
+label_1.pack()
+
+
+def getFolderPath():
+    global folderPath
+    folder_selected = filedialog.askdirectory()
+    folderPath.set(folder_selected)
+
+
+label_1 = tk.Label(win, text='Внимание! Папка для сохранения шк должна быть пустой',
+                   bg='#d3b4ff', font=('Calibri', 20))
+label_1.pack()
+
+folderPath = StringVar()
+btnFind = tk.Button(win, text="Выберите файл для сохранения шк",command=getFolderPath)
+btnFind.pack()
+
+
+def select_file():
+    global folderPath
+    pathway = folderPath.get()
+    pathway.split(r'/')
+    print(pathway)
+    filetypes = (
+        ('text files', '*.pdf'),
+        ('All files', '*.*')
+    )
+
+    filename = fd.askopenfilename(
+        title='Open a file',
+        initialdir='/',
+        filetypes=filetypes)
+    showinfo(
+        title='Selected File',
+        message=filename
+    )
+    print(filename)
+
+    input_pdf = filename
+    output_txt = f'{pathway}/sample.txt'
+
+    i_f = open(input_pdf, 'rb')
+    resMgr = PDFResourceManager()
+    retData = io.StringIO()
+    TxtConverter = TextConverter(resMgr, retData, laparams=LAParams())
+    interpreter = PDFPageInterpreter(resMgr, TxtConverter)
+    for page in PDFPage.get_pages(i_f):
+        interpreter.process_page(page)
+
+    txt = retData.getvalue()
+    with open(output_txt, 'w') as of:
+        of.write(txt)
+    with open(output_txt) as file:
+        i = 1
+        for line in file:
+            if re.match('^\s*$', line):
+                continue
+            if line[0] == 'W':
+                Barcode = line
+
+            sample_barcode = barcode.get('code128', Barcode, writer=ImageWriter())
+            sample_barcode.save(f'{pathway}/{i}')
+            i = i + 1
+            print(sample_barcode)
+
+
+btn_import_file = tk.Button(win, text='Выбрать файл PDF', command=select_file)
+btn_import_file.pack()
+
+win.mainloop()  # Главный цикл запуска
